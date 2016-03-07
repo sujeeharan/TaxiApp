@@ -128,7 +128,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
 
         //downloadFile(download_file_video+"1231.mp4");
 
-        videopath = Environment.getExternalStorageDirectory()+"/OnlineTaxi/Videos/";
+        videopath = Environment.getExternalStorageDirectory ()+"/OnlineTaxi/Videos/";
         openimage("0000");
 //        downloadFile(download_file_video+"1231.mp4");
 
@@ -145,7 +145,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         //Getting Banners
         try {
             Banner b=new Banner();
-            new Banner().execute();
+            b.execute();
             json_data= b.display();
             JSONArray jsonarry = json_data.optJSONArray("banner");
             Toast.makeText(this,jsonarry.getString(0),Toast.LENGTH_LONG).show();
@@ -163,13 +163,14 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         //Getting Videos
         try {
             Video v=new Video();
-            new Video().execute();
+            v.execute();
             json_data= v.display();
             JSONArray jsonarry1 = json_data.optJSONArray("video");
             for (int i = 0; i < jsonarry1.length(); i++) {
                 JSONObject jsonObject = jsonarry1.getJSONObject(i);
-                Toast.makeText(this,"Getting Video",Toast.LENGTH_LONG).show();
+                Toast.makeText(this,"Getting Video ",Toast.LENGTH_LONG).show();
                 videolist.add(jsonObject.optString("videoid").toString());
+                Toast.makeText(this,videolist.get(i),Toast.LENGTH_LONG).show();
                 Log.e("videoid", videolist.get(i) + "");
             }
         } catch (Exception e) {
@@ -184,7 +185,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                     showProgress(download_file_video+listname+".mp4");
                     new Thread(new Runnable() {
                         public void run() {
-                            downloadFile(download_file_video+listname+".mp4");
+                            downloadFileVideo(listname);
                         }
                     }).start();
                     Toast.makeText(this,download_file_video+listname,Toast.LENGTH_LONG).show();
@@ -268,10 +269,10 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
     }
 
 
-    void downloadFile(String Filename){
+    void downloadFileBanner(String Filename){
 
         try {
-            URL url = new URL(Filename);
+            URL url = new URL(download_file_banner+Filename+".jpg");
             HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
 
             urlConnection.setRequestMethod("GET");
@@ -281,13 +282,13 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
             urlConnection.connect();
 
             //set the path where we want to save the file
-            File SDCardRoot = (File) Environment.getRootDirectory();
+            File SDCardRoot = new File(Environment.getExternalStorageDirectory()+"/OnlineTaxi/Videos/");
 
             //create a new file, to save the  file
-            File file = new File(SDCardRoot,"/0001.mp4");
+            File file = new File(SDCardRoot,Filename+".jpg");
 
             //FileOutputStream fileOutput = new FileOutputStream(file);
-            FileOutputStream fos=openFileOutput("0001.mp4", Context.MODE_PRIVATE);
+            FileOutputStream fos=openFileOutput(Filename+".jpg", Context.MODE_PRIVATE);
             //Stream used for reading the data from the internet
             InputStream inputStream = urlConnection.getInputStream();
 
@@ -335,6 +336,74 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
             showError("Error : Please check your internet connection</span> " + e);
         }
     }
+    void downloadFileVideo(String Filename){
+
+        try {
+            URL url = new URL(download_file_video+Filename+".mp4");
+            HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
+
+            urlConnection.setRequestMethod("GET");
+            urlConnection.setDoOutput(true);
+
+            //connect
+            urlConnection.connect();
+
+            //set the path where we want to save the file
+            File SDCardRoot = (File) Environment.getRootDirectory();
+
+            //create a new file, to save the  file
+            File file = new File(SDCardRoot,Filename+".mp4");
+
+            //FileOutputStream fileOutput = new FileOutputStream(file);
+            FileOutputStream fos=openFileOutput(Filename+".mp4", Context.MODE_PRIVATE);
+            //Stream used for reading the data from the internet
+            InputStream inputStream = urlConnection.getInputStream();
+
+            //this is the total size of the file which we are downloading
+            totalSize = urlConnection.getContentLength();
+
+            runOnUiThread(new Runnable() {
+                public void run() {
+                    pb.setMax(totalSize);
+                }
+            });
+
+            //create a buffer...
+            byte[] buffer = new byte[1024];
+            int bufferLength = 0;
+
+            while ( (bufferLength = inputStream.read(buffer)) > 0 ) {
+                fos.write(buffer, 0, bufferLength);
+                downloadedSize += bufferLength;
+                // update the progressbar //
+                runOnUiThread(new Runnable() {
+                    public void run() {
+                        pb.setProgress(downloadedSize);
+                        float per = ((float)downloadedSize/totalSize) * 100;
+                        cur_val.setText("Downloaded " + downloadedSize + "KB / " + totalSize + "KB (" + (int)per + "%)" );
+                    }
+                });
+            }
+            //close the output stream when complete //
+            fos.close();
+            runOnUiThread(new Runnable() {
+                public void run() {
+                    // pb.<span id="IL_AD12" class="IL_AD">dismiss</span>(); // if you want close it..
+                }
+            });
+
+        } catch (final MalformedURLException e) {
+            showError("Error : MalformedURLException " + e);
+            e.printStackTrace();
+        } catch (final IOException e) {
+            showError("Error : IOException " + e);
+            e.printStackTrace();
+        }
+        catch (final Exception e) {
+            showError("Error : Please check your internet connection</span> " + e);
+        }
+    }
+
     void showError(final String err){
         runOnUiThread(new Runnable() {
             public void run() {
